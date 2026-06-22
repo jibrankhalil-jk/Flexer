@@ -18,25 +18,39 @@ document.addEventListener("DOMContentLoaded", () => {
 // ========== Event Listeners ==========
 
 const marksForm = document.getElementById("grand-marks");
-marksForm.addEventListener("submit", handleMarksFormSubmit);
+if (marksForm) {
+  marksForm.addEventListener("submit", handleMarksFormSubmit);
+}
 
 const feedbackForm = document.getElementById("feedback-form");
-feedbackForm.addEventListener("submit", handleFeedbackFormSubmit);
+if (feedbackForm) {
+  feedbackForm.addEventListener("submit", handleFeedbackFormSubmit);
+}
 
 const gpaCalculatorForm = document.getElementById("gpa-calculator");
-gpaCalculatorForm.addEventListener("submit", handleCalculatorFormSubmit);
+if (gpaCalculatorForm) {
+  gpaCalculatorForm.addEventListener("submit", handleCalculatorFormSubmit);
+}
 
 const darkModeForm = document.getElementById("dark-mode");
-darkModeForm.addEventListener("submit", handleDarkModeFormSubmit);
+if (darkModeForm) {
+  darkModeForm.addEventListener("submit", handleDarkModeFormSubmit);
+}
 
 const feeCalculatorForm = document.getElementById("fee-calc");
-feeCalculatorForm.addEventListener("submit", handleFeeCalculatorFormSubmit);
+if (feeCalculatorForm) {
+  feeCalculatorForm.addEventListener("submit", handleFeeCalculatorFormSubmit);
+}
 
 const admitCardForm = document.getElementById("admit-card");
-admitCardForm.addEventListener("submit", handleAdmitCardSubmit);
+if (admitCardForm) {
+  admitCardForm.addEventListener("submit", handleAdmitCardSubmit);
+}
 
 const gradeHighlighterForm = document.getElementById("grade-highlighter");
-gradeHighlighterForm.addEventListener("submit", handleGradeHighlighterSubmit);
+if (gradeHighlighterForm) {
+  gradeHighlighterForm.addEventListener("submit", handleGradeHighlighterSubmit);
+}
 
 // ========== Handler Functions ==========
 
