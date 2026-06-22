@@ -1,0 +1,909 @@
+document.addEventListener("DOMContentLoaded", () => {
+  const tabs = document.querySelectorAll(".tab-btn");
+  const contents = document.querySelectorAll(".tab-content");
+
+  tabs.forEach((tab) => {
+    tab.addEventListener("click", () => {
+      const target = tab.dataset.tab;
+
+      tabs.forEach((t) => t.classList.remove("active"));
+      contents.forEach((c) => c.classList.remove("active"));
+
+      tab.classList.add("active");
+      document.getElementById(target).classList.add("active");
+    });
+  });
+});
+
+// ========== Event Listeners ==========
+
+const marksForm = document.getElementById("grand-marks");
+marksForm.addEventListener("submit", handleMarksFormSubmit);
+
+const feedbackForm = document.getElementById("feedback-form");
+feedbackForm.addEventListener("submit", handleFeedbackFormSubmit);
+
+const gpaCalculatorForm = document.getElementById("gpa-calculator");
+gpaCalculatorForm.addEventListener("submit", handleCalculatorFormSubmit);
+
+const darkModeForm = document.getElementById("dark-mode");
+darkModeForm.addEventListener("submit", handleDarkModeFormSubmit);
+
+const feeCalculatorForm = document.getElementById("fee-calc");
+feeCalculatorForm.addEventListener("submit", handleFeeCalculatorFormSubmit);
+
+const admitCardForm = document.getElementById("admit-card");
+admitCardForm.addEventListener("submit", handleAdmitCardSubmit);
+
+const gradeHighlighterForm = document.getElementById("grade-highlighter");
+gradeHighlighterForm.addEventListener("submit", handleGradeHighlighterSubmit);
+
+// ========== Handler Functions ==========
+
+async function handleMarksFormSubmit(event) {
+  event.preventDefault();
+  let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+  if (!isValidFlexUrl(tab?.url)) {
+    alert("Please open the FlexStudent website first.");
+    return;
+  }
+
+  chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    function: marksMainFunction,
+  });
+}
+
+async function handleCalculatorFormSubmit(event) {
+  event.preventDefault();
+  let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+  if (!isValidFlexUrl(tab?.url)) {
+    alert("Please open the FlexStudent website first.");
+    return;
+  }
+
+  chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    function: calculatorMainFunction,
+  });
+}
+
+async function handleDarkModeFormSubmit(event) {
+  event.preventDefault();
+
+  let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+  if (!isValidFlexUrl(tab?.url)) {
+    alert("Please open the FlexStudent website first.");
+    return;
+  }
+
+  const result = await chrome.storage.local.get("darkMode");
+  const newState = !result.darkMode;
+  await chrome.storage.local.set({ darkMode: newState });
+
+  chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    function: DarkModeMainFunction,
+    args: [newState],
+  });
+}
+
+async function handleFeeCalculatorFormSubmit(event) {
+  event.preventDefault();
+  let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+  if (!isValidFlexUrl(tab?.url)) {
+    alert("Please open the FlexStudent website first.");
+    return;
+  }
+
+  chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    function: feeCalculatorMainFunction,
+  });
+}
+
+async function handleFeedbackFormSubmit(event) {
+  event.preventDefault();
+  let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+  if (!isValidFlexUrl(tab?.url)) {
+    alert("Please open the FlexStudent website first.");
+    return;
+  }
+
+  const input = document.querySelector('input[name="feedback-radio"]:checked');
+  if (!input) {
+    alert("Please select a feedback option first.");
+    return;
+  }
+
+  chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    function: feedbackMainFunction,
+    args: [input.value],
+  });
+}
+
+async function handleAdmitCardSubmit(event) {
+  event.preventDefault();
+  let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+  if (!isValidFlexUrl(tab?.url)) {
+    alert("Please open the FlexStudent website first.");
+    return;
+  }
+
+  const input = document.getElementById("admit-card-radio");
+  if (!input) {
+    alert("Please select an option first.");
+    return;
+  }
+
+  chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    function: admitCardMainFunction,
+    args: [input.value],
+  });
+}
+
+async function handleGradeHighlighterSubmit(event) {
+  event.preventDefault();
+
+  let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+  if (!isValidFlexUrl(tab?.url)) {
+    alert("Please open the FlexStudent website first.");
+    return;
+  }
+
+  const thresholdSelect = document.getElementById("grade-threshold");
+  const threshold = thresholdSelect.value;
+
+  if (!threshold) {
+    alert("Please select a grade first.");
+    return;
+  }
+
+  // Get selected mode: "below" or "exact"
+  const mode = document.querySelector(
+    'input[name="highlight-mode"]:checked',
+  ).value;
+
+  chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    function: gradeHighlighterMainFunction,
+    args: [parseFloat(threshold), mode],
+  });
+}
+
+// ========== Helper Function ==========
+
+function isValidFlexUrl(url) {
+  try {
+    const urlObj = new URL(url);
+    return urlObj.hostname === "flexstudent.nu.edu.pk";
+  } catch {
+    return false;
+  }
+}
+
+// ========== Main Functions (Injected into Page) ==========
+
+async function marksMainFunction() {
+  if (!window.location.href.includes("Student/StudentMarks")) {
+    alert("Please Open Marks Page First");
+    return;
+  }
+
+  const getTd = (className, id) => {
+    const td = document.createElement("td");
+    td.classList.add("text-center");
+    td.classList.add(className);
+    td.id = id;
+    return td;
+  };
+
+  const getTr = (id) => {
+    const tr = document.createElement("tr");
+    tr.classList.add("totalColumn_" + id);
+    tr.appendChild(getTd("totalColGrandTotal", "GrandtotalColMarks_" + id));
+    tr.appendChild(getTd("totalColObtMarks", "GrandtotalObtMarks_" + id));
+    tr.appendChild(getTd("totalColAverageMark", "GrandtotalClassAvg_" + id));
+    tr.appendChild(getTd("totalColMinMarks", "GrandtotalClassMin_" + id));
+    tr.appendChild(getTd("totalColMaxMarks", "GrandtotalClassMax_" + id));
+    tr.appendChild(getTd("totalColStdDev", "GrandtotalClassStdDev_" + id));
+    return tr;
+  };
+
+  const parseFloatOrZero = (value) => {
+    const parsedValue = parseFloat(value);
+    return isNaN(parsedValue) ? 0 : parsedValue;
+  };
+
+  const checkBestOff = (section, weightage) => {
+    const calculationRows = section.querySelectorAll(`.calculationrow`);
+    let weightsOfAssessments = 0;
+    let count = 0;
+    for (let row of calculationRows) {
+      const weightageOfAssessment = parseFloatOrZero(
+        row.querySelector(".weightage").textContent,
+      );
+      weightsOfAssessments += weightageOfAssessment;
+
+      if (weightage < weightsOfAssessments) {
+        return count;
+      }
+      count++;
+    }
+    return count;
+  };
+
+  const reorderCalculationRows = (section, bestOff) => {
+    const sectionArray = Array.from(
+      section.querySelectorAll(`.calculationrow`),
+    );
+    sectionArray.sort((a, b) => {
+      const aObtained = parseFloatOrZero(
+        a.querySelector(".ObtMarks").textContent,
+      );
+      const bObtained = parseFloatOrZero(
+        b.querySelector(".ObtMarks").textContent,
+      );
+      return bObtained - aObtained;
+    });
+    return sectionArray.slice(0, bestOff);
+  };
+
+  async function set_marks(courseId, id) {
+    const course = document.getElementById(courseId);
+    const sections = course.querySelectorAll(
+      `div[id^="${courseId}"]:not([id$="Grand_Total_Marks"])`,
+    );
+
+    let globalWeightage = 0;
+    let globalObtained = 0;
+    let globalAverage = 0;
+    let globalMinimum = 0;
+    let globalMaximum = 0;
+
+    const getLocalWeitage = (totalRow) => {
+      let dd = 0;
+      try {
+        const raw = parseFloat(
+          totalRow.querySelector(".totalColweightage").textContent,
+        );
+        if (raw != null) {
+          dd = raw;
+        }
+      } catch (e) {}
+      return dd;
+    };
+    const getLocalObtain = (totalRow) => {
+      let dd = 0;
+      try {
+        const raw = parseFloat(
+          totalRow.querySelector(".totalColObtMarks").textContent,
+        );
+        if (raw != null) {
+          dd = raw;
+        }
+      } catch (e) {}
+      return dd;
+    };
+
+    for (let section of sections) {
+      const totalRow = section.querySelector(`.totalColumn_${id}`);
+      const localWeightage = getLocalWeitage(totalRow);
+      const localObtained = getLocalObtain(totalRow);
+
+      globalWeightage += localWeightage;
+      globalObtained += localObtained;
+
+      const bestOff = checkBestOff(section, localWeightage);
+      const calculationRows = reorderCalculationRows(section, bestOff);
+
+      for (let row of calculationRows) {
+        const weightage = parseFloatOrZero(
+          row.querySelector(".weightage").textContent,
+        );
+        const obtained = parseFloatOrZero(
+          row.querySelector(".ObtMarks").textContent,
+        );
+        const total = parseFloatOrZero(
+          row.querySelector(".GrandTotal").textContent,
+        );
+        const average = parseFloatOrZero(
+          row.querySelector(".AverageMarks").textContent,
+        );
+        const minimum = parseFloatOrZero(
+          row.querySelector(".MinMarks").textContent,
+        );
+        const maximum = parseFloatOrZero(
+          row.querySelector(".MaxMarks").textContent,
+        );
+
+        globalAverage += average * (weightage / total);
+        globalMinimum += minimum * (weightage / total);
+        globalMaximum += maximum * (weightage / total);
+      }
+    }
+
+    document.getElementById(`GrandtotalColMarks_${id}`).textContent =
+      globalWeightage.toFixed(2);
+    document.getElementById(`GrandtotalObtMarks_${id}`).textContent =
+      globalObtained.toFixed(2);
+    document.getElementById(`GrandtotalClassAvg_${id}`).textContent =
+      globalAverage.toFixed(2);
+    document.getElementById(`GrandtotalClassMin_${id}`).textContent =
+      globalMinimum.toFixed(2);
+    document.getElementById(`GrandtotalClassMax_${id}`).textContent =
+      globalMaximum.toFixed(2);
+  }
+
+  const courses = document.querySelectorAll(`div[class*='tab-pane']`);
+
+  for (let i = 0; i < courses.length; i++) {
+    const courseId = courses[i].id;
+    const button = courses[i].querySelector(
+      `button[onclick*="ftn_calculateMarks"]`,
+    );
+    if (button) {
+      const id = parseInt(button.getAttribute("onclick").substring(20, 24));
+      const newTr = getTr(id);
+      courses[i]
+        .querySelector(`div[id=${courses[i].id}-Grand_Total_Marks]`)
+        .querySelector("tbody").innerHTML = "";
+      courses[i]
+        .querySelector(`div[id=${courses[i].id}-Grand_Total_Marks]`)
+        .querySelector("tbody")
+        .appendChild(newTr);
+      set_marks(courseId, id);
+    }
+  }
+}
+
+async function feedbackMainFunction(input) {
+  if (!window.location.href.includes("Student/FeedBackQuestions")) {
+    alert("Please Open Feedback Page of a Specific Course First");
+    return;
+  }
+
+  function selectSpecificRadio(element, input) {
+    const radioButtonsSpan = element.getElementsByClassName(
+      "m-list-timeline__time",
+    );
+    for (let i = 0; i < radioButtonsSpan.length; i++) {
+      if (radioButtonsSpan[i].textContent.trim() === input) {
+        const radioButton = radioButtonsSpan[i].querySelector(
+          'input[type="radio"]',
+        );
+        radioButton.checked = true;
+        break;
+      }
+    }
+  }
+
+  function selectSpecificFeedback(input) {
+    const questions = document.getElementsByClassName("m-list-timeline__item");
+    Array.from(questions).forEach((question) => {
+      selectSpecificRadio(question, input);
+    });
+  }
+
+  function selectRandomFeedback() {
+    const questions = document.getElementsByClassName("m-list-timeline__item");
+    Array.from(questions).forEach((question) => {
+      const radioButtonsSpan = question.getElementsByClassName(
+        "m-list-timeline__time",
+      );
+      const randomIndex = Math.floor(Math.random() * radioButtonsSpan.length);
+      const radioButton = radioButtonsSpan[randomIndex].querySelector(
+        'input[type="radio"]',
+      );
+      radioButton.checked = true;
+    });
+  }
+
+  input === "Randomize"
+    ? selectRandomFeedback()
+    : selectSpecificFeedback(input);
+}
+
+async function calculatorMainFunction() {
+  if (!window.location.href.includes("Student/Transcript")) {
+    alert("Please Open Transcript Page first");
+    return;
+  }
+
+  const getSelect = (currGrade) => {
+    return `<select>
+      <option value="-1">-</option>
+      <option value="4" ${currGrade == "A+" || currGrade == "A" ? "selected" : ""}>A/A+</option>
+      <option value="3.67" ${currGrade == "A-" ? "selected" : ""}>A-</option>
+      <option value="3.33" ${currGrade == "B+" ? "selected" : ""}>B+</option>
+      <option value="3" ${currGrade == "B" ? "selected" : ""}>B</option>
+      <option value="2.67" ${currGrade == "B-" ? "selected" : ""}>B-</option>
+      <option value="2.33" ${currGrade == "C+" ? "selected" : ""}>C+</option>
+      <option value="2" ${currGrade == "C" ? "selected" : ""}>C</option>
+      <option value="1.67" ${currGrade == "C-" ? "selected" : ""}>C-</option>
+      <option value="1.33" ${currGrade == "D+" ? "selected" : ""}>D+</option>
+      <option value="1" ${currGrade == "D" ? "selected" : ""}>D</option>
+      <option value="0" ${currGrade == "F" ? "selected" : ""}>F</option>
+      <option value="-2" ${currGrade == "S" ? "selected" : ""}>S</option>
+      <option value="-3" ${currGrade == "U" ? "selected" : ""}>U</option>
+    </select>`;
+  };
+
+  const getSUcredithours = () => {
+    return Array.from(document.getElementsByTagName("td"))
+      .filter((td) => td.innerText == "S" || td.innerText == "U")
+      .reduce(
+        (total, curr) =>
+          total + parseInt(curr.previousElementSibling.innerText),
+        0,
+      );
+  };
+
+  let semesters = document.getElementsByClassName("col-md-6");
+  let lastSemester = semesters[semesters.length - 1];
+  let spans = lastSemester.querySelectorAll("span");
+
+  let cgpa = 0;
+  let cgpaelem = spans[2];
+  let sgpaelem = spans[3];
+
+  let crEarned = 0;
+
+  if (semesters.length > 1) {
+    let secondLastSemester = semesters[semesters.length - 2];
+    crEarned = parseInt(
+      secondLastSemester.querySelectorAll("span")[1].innerText.split(":")[1],
+    );
+    cgpa = parseFloat(
+      secondLastSemester.querySelectorAll("span")[2].innerText.split(":")[1],
+    );
+  }
+
+  let rows = lastSemester.querySelectorAll("tbody > tr");
+
+  for (let row of rows) {
+    const gradeCell = row.querySelectorAll("td.text-center")[1];
+    const currentGradeText = gradeCell.innerText.trim();
+    gradeCell.innerHTML = getSelect(currentGradeText);
+  }
+
+  const getCorrespondingCreditHours = (selectelem) =>
+    parseInt(selectelem.parentElement.previousElementSibling.innerText);
+
+  const handleSelectChange = (e) => {
+    let selects = document.getElementsByTagName("select");
+    let totalCreditHours = 0;
+    let totalGradePoints = 0;
+
+    const allCourses = [];
+    for (let i = 0; i < semesters.length; i++) {
+      let semesterRows = semesters[i].querySelectorAll("tbody > tr");
+      for (let row of semesterRows) {
+        const courseName = row
+          .querySelector("td:nth-child(2)")
+          .innerText.trim();
+        const creditHours = parseInt(
+          row.querySelector("td:nth-child(4)").innerText,
+        );
+        const gradeCell = row.querySelector("td:nth-child(5)");
+        let gradeValue = -1;
+
+        if (gradeCell.querySelector("select")) {
+          gradeValue = parseFloat(gradeCell.querySelector("select").value);
+        } else {
+          const gradeText = gradeCell.innerText.trim();
+          switch (gradeText) {
+            case "A+":
+            case "A":
+              gradeValue = 4;
+              break;
+            case "A-":
+              gradeValue = 3.67;
+              break;
+            case "B+":
+              gradeValue = 3.33;
+              break;
+            case "B":
+              gradeValue = 3;
+              break;
+            case "B-":
+              gradeValue = 2.67;
+              break;
+            case "C+":
+              gradeValue = 2.33;
+              break;
+            case "C":
+              gradeValue = 2;
+              break;
+            case "C-":
+              gradeValue = 1.67;
+              break;
+            case "D+":
+              gradeValue = 1.33;
+              break;
+            case "D":
+              gradeValue = 1;
+              break;
+            case "F":
+              gradeValue = 0;
+              break;
+            case "S":
+              gradeValue = -2;
+              break;
+            case "U":
+              gradeValue = -3;
+              break;
+            default:
+              gradeValue = -1;
+          }
+        }
+
+        if (gradeValue !== -1 && gradeValue !== -2 && gradeValue !== -3) {
+          allCourses.push({
+            name: courseName,
+            creditHours: creditHours,
+            gradeValue: gradeValue,
+          });
+        }
+      }
+    }
+
+    const courseLatestGrades = {};
+    for (const course of allCourses) {
+      courseLatestGrades[course.name] = course;
+    }
+
+    let finalTotalCreditHours = 0;
+    let finalTotalGradePoints = 0;
+    for (const courseName in courseLatestGrades) {
+      const course = courseLatestGrades[courseName];
+      finalTotalCreditHours += course.creditHours;
+      finalTotalGradePoints += course.creditHours * course.gradeValue;
+    }
+
+    for (let select of selects) {
+      if (select.value != -1 && select.value != -2 && select.value != -3) {
+        select.parentElement.nextElementSibling.innerText = select.value;
+        select.parentElement.nextElementSibling.style.fontWeight = "bold";
+      } else if (select.value == -2) {
+        select.parentElement.nextElementSibling.innerText = "S";
+        select.parentElement.nextElementSibling.style.fontWeight = "normal";
+      } else if (select.value == -3) {
+        select.parentElement.nextElementSibling.innerText = "U";
+        select.parentElement.nextElementSibling.style.fontWeight = "normal";
+      } else {
+        select.parentElement.nextElementSibling.innerText = "-";
+        select.parentElement.nextElementSibling.style.fontWeight = "normal";
+      }
+    }
+
+    if (finalTotalCreditHours === 0) {
+      cgpaelem.innerHTML = `CGPA: ${cgpa.toFixed(2)}`;
+      sgpaelem.innerHTML = `SGPA: 0`;
+      return;
+    }
+
+    for (let select of selects) {
+      if (select.value != -1 && select.value != -2 && select.value != -3) {
+        totalCreditHours += getCorrespondingCreditHours(select);
+        totalGradePoints +=
+          parseFloat(getCorrespondingCreditHours(select)) *
+          parseFloat(select.value);
+      }
+    }
+
+    const calculatedSGPA =
+      totalCreditHours > 0 ? totalGradePoints / totalCreditHours : 0;
+    const calculatedCGPA = finalTotalGradePoints / finalTotalCreditHours;
+
+    cgpaelem.innerHTML = `CGPA: ${calculatedCGPA.toFixed(2)}`;
+    sgpaelem.innerHTML = `SGPA: ${calculatedSGPA.toFixed(2)}`;
+
+    cgpaelem.style.fontWeight = "bold";
+    sgpaelem.style.fontWeight = "bold";
+  };
+
+  Array.from(document.getElementsByTagName("select")).forEach((select) => {
+    select.addEventListener("change", handleSelectChange);
+  });
+
+  handleSelectChange();
+}
+
+async function DarkModeMainFunction(enable) {
+  const topLeftDivId = "jugadu-top-left-overlay";
+
+  if (!document.getElementById("jugadu-dark-style")) {
+    const style = document.createElement("style");
+    style.id = "jugadu-dark-style";
+    style.textContent = `
+      body.jugadu-dark-mode,
+      body.jugadu-dark-mode div,
+      body.jugadu-dark-mode section,
+      body.jugadu-dark-mode header,
+      body.jugadu-dark-mode main,
+      body.jugadu-dark-mode footer,
+      body.jugadu-dark-mode table,
+      body.jugadu-dark-mode tbody,
+      body.jugadu-dark-mode tr,
+      body.jugadu-dark-mode td,
+      body.jugadu-dark-mode th,
+      body.jugadu-dark-mode input,
+      body.jugadu-dark-mode select,
+      body.jugadu-dark-mode textarea,
+      body.jugadu-dark-mode .card,
+      body.jugadu-dark-mode .panel,
+      body.jugadu-dark-mode .panel-body {
+        background-color: #121212 !important;
+        color: #e0e0e0 !important;
+        border-color: #333 !important;
+      }
+
+      body.jugadu-dark-mode a { color: #bb86fc !important; }
+      body.jugadu-dark-mode .btn { background-color: #333 !important; color: #fff !important; }
+    `;
+    document.head.appendChild(style);
+  }
+
+  if (enable === true) {
+    document.body.classList.add("jugadu-dark-mode");
+
+    if (!document.getElementById(topLeftDivId)) {
+      const topLeftDiv = document.createElement("div");
+      topLeftDiv.id = topLeftDivId;
+      topLeftDiv.style.position = "fixed";
+      topLeftDiv.style.top = "0";
+      topLeftDiv.style.left = "0";
+      topLeftDiv.style.width = "300px";
+      topLeftDiv.style.height = "80px";
+      topLeftDiv.style.backgroundColor = "#000";
+      topLeftDiv.style.zIndex = "9999";
+      topLeftDiv.style.pointerEvents = "none";
+      document.body.appendChild(topLeftDiv);
+    }
+  } else if (enable === false) {
+    document.body.classList.remove("jugadu-dark-mode");
+
+    const overlay = document.getElementById(topLeftDivId);
+    if (overlay) overlay.remove();
+  } else {
+    const isDark = document.body.classList.toggle("jugadu-dark-mode");
+
+    if (isDark) {
+      if (!document.getElementById(topLeftDivId)) {
+        const topLeftDiv = document.createElement("div");
+        topLeftDiv.id = topLeftDivId;
+        topLeftDiv.style.position = "fixed";
+        topLeftDiv.style.top = "0";
+        topLeftDiv.style.left = "0";
+        topLeftDiv.style.width = "300px";
+        topLeftDiv.style.height = "80px";
+        topLeftDiv.style.backgroundColor = "#000";
+        topLeftDiv.style.zIndex = "9999";
+        topLeftDiv.style.pointerEvents = "none";
+        document.body.appendChild(topLeftDiv);
+      }
+    } else {
+      const overlay = document.getElementById(topLeftDivId);
+      if (overlay) overlay.remove();
+    }
+  }
+}
+
+async function feeCalculatorMainFunction() {
+  if (
+    !window.location.href.includes(
+      "flexstudent.nu.edu.pk/Student/TentativeStudyPlan",
+    )
+  ) {
+    alert("Please Open Tentative Study Plan Page first");
+    return;
+  }
+
+  const FEE_PER_CREDIT = 11000;
+
+  const semesterHeadings = Array.from(
+    document.querySelectorAll("h4, h5, h3, div, span"),
+  ).filter((el) => el.innerText?.trim().startsWith("Semester No."));
+
+  if (semesterHeadings.length === 0) {
+    alert("Could not detect semester headings.");
+    return;
+  }
+
+  semesterHeadings.forEach((heading) => {
+    if (heading.dataset.feeInjected) return;
+
+    let table = heading.nextElementSibling;
+    while (table && table.tagName !== "TABLE") {
+      table = table.nextElementSibling;
+    }
+    if (!table) return;
+
+    let semesterCredits = 0;
+    const rows = table.querySelectorAll("tbody tr");
+
+    rows.forEach((row) => {
+      const cells = row.querySelectorAll("td");
+      if (cells.length < 4) return;
+
+      const credits = Number(cells[2].innerText.trim());
+      const type = cells[3].innerText.trim().toLowerCase();
+
+      if (type === "non credit") return;
+      if (!isNaN(credits)) semesterCredits += credits;
+    });
+
+    const semesterFee = semesterCredits * FEE_PER_CREDIT;
+
+    const feeSpan = document.createElement("span");
+    feeSpan.innerText = ` — Fee: Rs. ${semesterFee.toLocaleString()}`;
+    feeSpan.style.marginLeft = "10px";
+    feeSpan.style.fontWeight = "600";
+    feeSpan.style.color = "#0ccccc";
+
+    heading.appendChild(feeSpan);
+    heading.dataset.feeInjected = "true";
+  });
+}
+
+async function admitCardMainFunction(inputValue) {
+  if (
+    !(
+      inputValue === "Sessional-I" ||
+      inputValue === "Sessional-II" ||
+      inputValue === "Final"
+    )
+  ) {
+    return;
+  }
+  const resp = await fetch(
+    `https://flexstudent.nu.edu.pk/Student/AdmitCardByRollNo?cardtype=${inputValue}&type=pdf`,
+    {
+      method: "POST",
+    },
+  );
+  const blob = await resp.blob();
+  const url = URL.createObjectURL(blob);
+
+  let a = document.createElement("a");
+  a.href = url;
+  a.download = `Admit_Card_${inputValue}.pdf`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+async function gradeHighlighterMainFunction(threshold, mode) {
+  // Remove existing highlights first
+  document.querySelectorAll(".grade-highlighted").forEach((el) => {
+    el.classList.remove("grade-highlighted");
+    const badge = el.querySelector(".highlight-badge");
+    if (badge) badge.remove();
+  });
+
+  if (!window.location.href.includes("Student/Transcript")) {
+    alert("Please Open Transcript Page first");
+    return;
+  }
+
+  // ✅ Inject CSS into page
+  if (!document.getElementById("grade-highlighter-styles")) {
+    const style = document.createElement("style");
+    style.id = "grade-highlighter-styles";
+    style.textContent = `
+      .grade-highlighted {
+        background-color: #ffff00 !important;
+      }
+      .highlight-badge {
+        color: white;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 11px;
+        margin-left: 6px;
+        font-weight: bold;
+        display: inline-block;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  // Grade mappings
+  const gradeToValue = {
+    "A+": 4,
+    A: 4,
+    "A-": 3.67,
+    "B+": 3.33,
+    B: 3,
+    "B-": 2.67,
+    "C+": 2.33,
+    C: 2,
+    "C-": 1.67,
+    "D+": 1.33,
+    D: 1,
+    F: 0,
+  };
+
+  const valueToGrade = {
+    4: "A/A+",
+    3.67: "A-",
+    3.33: "B+",
+    3: "B",
+    2.67: "B-",
+    2.33: "C+",
+    2: "C",
+    1.67: "C-",
+    1.33: "D+",
+    1: "D",
+    0: "F",
+  };
+
+  let semesters = document.getElementsByClassName("col-md-6");
+  let count = 0;
+
+  for (let semester of semesters) {
+    let rows = semester.querySelectorAll("tbody > tr");
+
+    for (let row of rows) {
+      const cells = row.querySelectorAll("td.text-center");
+      if (cells.length < 2) continue;
+
+      const gradeCell = cells[1];
+      const gradeText = gradeCell.innerText.trim();
+
+      // Skip if GPA calculator select is active
+      if (gradeCell.querySelector("select")) continue;
+
+      const gradeValue = gradeToValue[gradeText];
+
+      let shouldHighlight = false;
+
+      if (mode === "below") {
+        // MODE 1: Highlight grades BELOW threshold
+        if (gradeValue !== undefined && gradeValue < threshold) {
+          shouldHighlight = true;
+        }
+      } else if (mode === "exact") {
+        // MODE 2: Highlight grades EXACTLY matching threshold
+        if (gradeValue === threshold) {
+          shouldHighlight = true;
+        }
+      }
+
+      if (shouldHighlight) {
+        row.classList.add("grade-highlighted");
+
+        const badge = document.createElement("span");
+        badge.className = "highlight-badge";
+
+        if (mode === "below") {
+          badge.innerText = `< ${valueToGrade[threshold]}`;
+          badge.style.backgroundColor = "#dc3545"; // Red for below
+        } else {
+          badge.innerText = gradeText;
+          badge.style.backgroundColor = "#198754"; // Green for exact match
+        }
+
+        gradeCell.appendChild(badge);
+        count++;
+      }
+    }
+  }
+
+  if (count === 0) {
+    alert(`✅ No courses found!`);
+  } else {
+    const modeText = mode === "below" ? `below` : `equal to`;
+    alert(
+      `⚠️ Found ${count} course(s) ${modeText} ${valueToGrade[threshold]}!`,
+    );
+  }
+}

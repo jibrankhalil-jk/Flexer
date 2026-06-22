@@ -1,0 +1,22 @@
+{
+  "name": "Flexer",
+  "description": "Flex is better with flexer.",
+  "manifest_version": 3,
+  "version": "1.0.1",
+  "permissions": ["scripting", "tabs", "storage"],
+  "host_permissions": ["*://flexstudent.nu.edu.pk/*"],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "icons": {
+    "128": "favicon.png",
+    "256": "favicon.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://flexstudent.nu.edu.pk/*"],
+      "js": ["content.js"],
+      "run_at": "document_start"
+    }
+  ]
+}

@@ -1,0 +1,84 @@
+html,
+body {
+  width: 350px;
+  margin: 0;
+  padding: 0;
+  background: #f8f9fa;
+  font-size: 14px;
+}
+
+.popup-container {
+  padding: 14px;
+}
+
+.title {
+  text-align: center;
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+
+.tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.tab-btn {
+  flex: 1;
+  border: none;
+  border-radius: 8px;
+  padding: 8px;
+  background: #e9ecef;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tab-btn.active {
+  background: #212529;
+  color: white;
+}
+
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+.btn {
+  border-radius: 8px;
+}
+
+.form-select {
+  border-radius: 8px;
+}
+
+.footer {
+  margin-top: 15px;
+  text-align: center;
+  font-size: 11px;
+  color: #6c757d;
+}
+
+.section-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6c757d;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Form check styling */
+.form-check {
+  padding-left: 1.25rem;
+  margin-bottom: 0;
+}
+
+.form-check-input:checked {
+  background-color: #212529;
+  border-color: #212529;
+}
