@@ -1,40 +1,40 @@
 async function DarkModeMainFunction(enable) {
-  const topLeftDivId = "jugadu-top-left-overlay";
+  const topLeftDivId = "flexer-top-left-overlay";
 
-  if (!document.getElementById("jugadu-dark-style")) {
+  if (!document.getElementById("flexer-dark-style")) {
     const style = document.createElement("style");
-    style.id = "jugadu-dark-style";
+    style.id = "flexer-dark-style";
     style.textContent = `
-      body.jugadu-dark-mode,
-      body.jugadu-dark-mode div,
-      body.jugadu-dark-mode section,
-      body.jugadu-dark-mode header,
-      body.jugadu-dark-mode main,
-      body.jugadu-dark-mode footer,
-      body.jugadu-dark-mode table,
-      body.jugadu-dark-mode tbody,
-      body.jugadu-dark-mode tr,
-      body.jugadu-dark-mode td,
-      body.jugadu-dark-mode th,
-      body.jugadu-dark-mode input,
-      body.jugadu-dark-mode select,
-      body.jugadu-dark-mode textarea,
-      body.jugadu-dark-mode .card,
-      body.jugadu-dark-mode .panel,
-      body.jugadu-dark-mode .panel-body {
+      body.flexer-dark-mode,
+      body.flexer-dark-mode div,
+      body.flexer-dark-mode section,
+      body.flexer-dark-mode header,
+      body.flexer-dark-mode main,
+      body.flexer-dark-mode footer,
+      body.flexer-dark-mode table,
+      body.flexer-dark-mode tbody,
+      body.flexer-dark-mode tr,
+      body.flexer-dark-mode td,
+      body.flexer-dark-mode th,
+      body.flexer-dark-mode input,
+      body.flexer-dark-mode select,
+      body.flexer-dark-mode textarea,
+      body.flexer-dark-mode .card,
+      body.flexer-dark-mode .panel,
+      body.flexer-dark-mode .panel-body {
         background-color: #121212 !important;
         color: #e0e0e0 !important;
         border-color: #333 !important;
       }
 
-      body.jugadu-dark-mode a { color: #bb86fc !important; }
-      body.jugadu-dark-mode .btn { background-color: #333 !important; color: #fff !important; }
+      body.flexer-dark-mode a { color: #bb86fc !important; }
+      body.flexer-dark-mode .btn { background-color: #333 !important; color: #fff !important; }
     `;
     document.head.appendChild(style);
   }
 
   if (enable === true) {
-    document.body.classList.add("jugadu-dark-mode");
+    document.body.classList.add("flexer-dark-mode");
 
     if (!document.getElementById(topLeftDivId)) {
       const topLeftDiv = document.createElement("div");
@@ -50,12 +50,12 @@ async function DarkModeMainFunction(enable) {
       document.body.appendChild(topLeftDiv);
     }
   } else if (enable === false) {
-    document.body.classList.remove("jugadu-dark-mode");
+    document.body.classList.remove("flexer-dark-mode");
 
     const overlay = document.getElementById(topLeftDivId);
     if (overlay) overlay.remove();
   } else {
-    const isDark = document.body.classList.toggle("jugadu-dark-mode");
+    const isDark = document.body.classList.toggle("flexer-dark-mode");
 
     if (isDark) {
       if (!document.getElementById(topLeftDivId)) {
