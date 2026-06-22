@@ -1,5 +1,5 @@
 <p align="center">
-  <img width="480" height="220" alt="image" src="favicon.png" />
+  <img width="480" height="260" alt="image" src="favicon.png" />
 </p>
 
 # Flexer
